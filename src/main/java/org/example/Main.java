@@ -1,33 +1,67 @@
 package org.example;
 
-import java.util.Arrays;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Random;
 
 public class Main {
     public static void main(String[] args) {
-        int[] arr = {5, 2, 9, 1, 5, 6};
+        Random rand = new Random();
+        Metrics metrics = new Metrics();
 
+        int[] sizes = {1000, 5000, 10000, 20000};
 
-        MergeSort.sort(arr);
-        System.out.println("MergeSort: " + Arrays.toString(arr));
+        try (FileWriter writer = new FileWriter("metrics.csv")) {
+            writer.write("algorithmName;runTime;counter;depth;allocation;extra\n");
 
+            for (int n : sizes) {
+                // MergeSort
+                int[] arr1 = rand.ints(n, 0, 100000).toArray();
+                metrics.reset();
+                long start = System.nanoTime();
+                MergeSort.sort(arr1, metrics);
+                long end = System.nanoTime();
+                writer.write(String.format("MergeSort;%d;%.3f;%d;%d;%d;\n",
+                        n, (end - start) / 1e6, metrics.getComparisons(),
+                        metrics.getRecursionDepth(), metrics.getAllocations()));
 
-        int[] arr2 = {10, -1, 3, 5, 0};
-        QuickSort.sort(arr2);
-        System.out.println("QuickSort: " + Arrays.toString(arr2));
+                // QuickSort
+                int[] arr2 = rand.ints(n, 0, 100000).toArray();
+                metrics.reset();
+                start = System.nanoTime();
+                QuickSort.sort(arr2, metrics);
+                end = System.nanoTime();
+                writer.write(String.format("QuickSort;%d;%.3f;%d;%d;%d;\n",
+                        n, (end - start) / 1e6, metrics.getComparisons(),
+                        metrics.getRecursionDepth(), metrics.getAllocations()));
 
-        git rebase -i
-        int[] arr3 = {7, 2, 1, 9, 5};
-        int third = DeterministicSelect.select(arr3, 3);
-        System.out.println("DeterministicSelect (3-й по величине): " + third);
+                // DeterministicSelect
+                int[] arr3 = rand.ints(n, 0, 100000).toArray();
+                int k = n / 2;
+                metrics.reset();
+                start = System.nanoTime();
+                int kth = DeterministicSelect.select(arr3, k, metrics);
+                end = System.nanoTime();
+                writer.write(String.format("DeterministicSelect;%d;%.3f;%d;%d;0;k=%d;result=%d\n",
+                        n, (end - start) / 1e6, metrics.getComparisons(),
+                        metrics.getRecursionDepth(), k, kth));
 
-
-        ClosestPair.Point[] pts = {
-                new ClosestPair.Point(0, 0),
-                new ClosestPair.Point(3, 4),
-                new ClosestPair.Point(7, 1),
-                new ClosestPair.Point(1, 1)
-        };
-        double dist = ClosestPair.findClosestPair(pts);
-        System.out.println("ClosestPair: " + dist);
+                // ClosestPair
+                ClosestPair.Point[] pts = new ClosestPair.Point[n];
+                for (int i = 0; i < n; i++) {
+                    pts[i] = new ClosestPair.Point(rand.nextDouble() * 10000, rand.nextDouble() * 10000);
+                }
+                metrics.reset();
+                start = System.nanoTime();
+                double dist = ClosestPair.findClosestPair(pts, metrics);
+                end = System.nanoTime();
+                writer.write(String.format("ClosestPair;%d;%.3f;%d;%d;0;dist=%.3f\n",
+                        n, (end - start) / 1e6, metrics.getComparisons(),
+                        metrics.getRecursionDepth(), dist));
+            }
+            System.out.println("✅ Метрики записаны в metrics.csv");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

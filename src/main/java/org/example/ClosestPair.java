@@ -4,63 +4,58 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class ClosestPair {
-    static class Point {
+    public static class Point {
         double x, y;
-        Point(double x, double y) { this.x = x; this.y = y; }
+        public Point(double x, double y) {
+            this.x = x; this.y = y;
+        }
     }
 
-    public static double findClosestPair(Point[] points) {
+    public static double findClosestPair(Point[] points, Metrics metrics) {
         Point[] px = points.clone();
-        Arrays.sort(px, Comparator.comparingDouble(p -> p.x));
         Point[] py = points.clone();
+        Arrays.sort(px, Comparator.comparingDouble(p -> p.x));
         Arrays.sort(py, Comparator.comparingDouble(p -> p.y));
-        return closest(px, py);
+        return closest(px, py, 0, points.length - 1, metrics);
     }
 
-    private static double closest(Point[] px, Point[] py) {
-        int n = px.length;
-        if (n <= 3) return bruteForce(px);
-
-        int mid = n / 2;
-        Point midPoint = px[mid];
-
-        Point[] pyl = Arrays.stream(py).filter(p -> p.x <= midPoint.x).toArray(Point[]::new);
-        Point[] pyr = Arrays.stream(py).filter(p -> p.x > midPoint.x).toArray(Point[]::new);
-
-        double dl = closest(Arrays.copyOfRange(px, 0, mid), pyl);
-        double dr = closest(Arrays.copyOfRange(px, mid, n), pyr);
-        double d = Math.min(dl, dr);
-
-        return Math.min(d, stripClosest(py, midPoint.x, d));
-    }
-
-    private static double bruteForce(Point[] pts) {
-        double min = Double.MAX_VALUE;
-        for (int i = 0; i < pts.length; i++) {
-            for (int j = i + 1; j < pts.length; j++) {
-                double dist = dist(pts[i], pts[j]);
-                if (dist < min) min = dist;
+    private static double closest(Point[] px, Point[] py, int lo, int hi, Metrics metrics) {
+        metrics.enterRecursion();
+        if (hi - lo <= 3) {
+            double min = Double.POSITIVE_INFINITY;
+            for (int i = lo; i <= hi; i++) {
+                for (int j = i + 1; j <= hi; j++) {
+                    metrics.incrementComparisons();
+                    min = Math.min(min, dist(px[i], px[j]));
+                }
             }
+            metrics.exitRecursion();
+            return min;
         }
-        return min;
-    }
+        int mid = (lo + hi) / 2;
+        double midX = px[mid].x;
 
-    private static double stripClosest(Point[] py, double midX, double d) {
-        Point[] strip = Arrays.stream(py)
-                .filter(p -> Math.abs(p.x - midX) < d)
-                .toArray(Point[]::new);
+        Point[] pyl = Arrays.stream(py).filter(p -> p.x <= midX).toArray(Point[]::new);
+        Point[] pyr = Arrays.stream(py).filter(p -> p.x > midX).toArray(Point[]::new);
 
-        double min = d;
+        double d1 = closest(px, pyl, lo, mid, metrics);
+        double d2 = closest(px, pyr, mid + 1, hi, metrics);
+        double d = Math.min(d1, d2);
+
+        double finalD = d;
+        Point[] strip = Arrays.stream(py).filter(p -> Math.abs(p.x - midX) < finalD).toArray(Point[]::new);
         for (int i = 0; i < strip.length; i++) {
-            for (int j = i + 1; j < strip.length && (strip[j].y - strip[i].y) < min; j++) {
-                double dist = dist(strip[i], strip[j]);
-                if (dist < min) min = dist;
+            for (int j = i + 1; j < strip.length && (strip[j].y - strip[i].y) < d; j++) {
+                metrics.incrementComparisons();
+                d = Math.min(d, dist(strip[i], strip[j]));
             }
         }
-        return min;
+        metrics.exitRecursion();
+        return d;
     }
 
-    private static double dist(Point p1, Point p2) {
-        return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+    private static double dist(Point a, Point b) {
+        double dx = a.x - b.x, dy = a.y - b.y;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 }

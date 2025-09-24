@@ -6,12 +6,10 @@ public class Metrics {
     private long currentDepth = 0;
     private long allocations = 0;
 
-    // 📌 учёт сравнений
     public void incrementComparisons() {
         comparisons++;
     }
 
-    // 📌 учёт глубины рекурсии
     public void enterRecursion() {
         currentDepth++;
         recursionDepth = Math.max(recursionDepth, currentDepth);
@@ -21,12 +19,10 @@ public class Metrics {
         currentDepth--;
     }
 
-    // 📌 учёт выделений памяти
     public void incrementAllocations() {
         allocations++;
     }
 
-    // 📌 геттеры
     public long getComparisons() {
         return comparisons;
     }
@@ -39,7 +35,6 @@ public class Metrics {
         return allocations;
     }
 
-    // 📌 сброс
     public void reset() {
         comparisons = 0;
         recursionDepth = 0;
